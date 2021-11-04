@@ -145,10 +145,32 @@ int task_switch (task_t *task)
     return swapcontext(&(old->context), &(task->context));
 }
 
+int task_join(task_t* task)
+{
+    if (task == NULL)
+        return -1;
+
+    else if (task->status == DONE)
+        return -1;
+
+    CURRENT_TASK->status = SUSPENDED;
+
+    queue_remove((queue_t**)&QUEUE, (queue_t *)CURRENT_TASK);
+    queue_append(&task->dependents, (queue_t *)CURRENT_TASK);
+    task_yield();
+
+    if (task->status != DONE)
+        perror("Something really wrong occured.\n");
+
+    return(task->exit_code);
+
+}
+
 void task_exit (int exit_code)
 {
     // free(CURRENT_TASK->context.uc_stack.ss_sp); // Can't do that :(
     CURRENT_TASK->status = DONE;
+    CURRENT_TASK->exit_code = exit_code;
 
     CURRENT_TASK->execution_time = total_tick_count - CURRENT_TASK->when_it_started;
 
@@ -160,6 +182,25 @@ void task_exit (int exit_code)
     {
         queue_remove((queue_t**) &QUEUE, (queue_t*) CURRENT_TASK);
         active_user_tasks -= 1;
+    }
+
+    if (queue_size(CURRENT_TASK->dependents) > 0)
+    {
+        queue_t* first = CURRENT_TASK->dependents;
+        queue_t* node = first;
+
+        do
+        {
+            task_t* task = (task_t*) node; 
+            node = node->next;
+
+            queue_remove(&CURRENT_TASK->dependents, (queue_t*)task);
+            task->status = READY;
+            queue_append((queue_t**) &QUEUE, (queue_t*)task);
+
+        } while (queue_size(CURRENT_TASK->dependents) > 0);
+        
+
     }
 
     // only go back to MAIN_TASK if it DISPATCHER is the one exiting.

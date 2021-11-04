@@ -24,7 +24,8 @@ typedef struct task_t
   int dynamic_priority;
   int clock_counter;
 
-  queue_t dependents;
+  queue_t* dependents;
+  int exit_code;
 
   // Statistics:
   unsigned int when_it_started;
