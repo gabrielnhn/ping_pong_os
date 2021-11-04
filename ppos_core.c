@@ -1,29 +1,32 @@
 // Gabriel Nascarella Hishida do Nascimento, GRR 20190361
 #include <stdio.h>
 #include <stdlib.h>
-#include <signal.h>
-#include <sys/time.h>
 #include "ppos.h"
 #include "ppos_data.h"
 #include "queue.h"
+#include <signal.h>
+#include <sys/time.h>
 
 #define STACKSIZE 64*1024 
 #define AGING 1
-
+// task aging for dynamic priority
+#define QUANTUM 1000 
+// a milisec.
+#define MAX_TICKS 20
 
 // Global vars
 int total_task_count;
 int active_user_tasks;
-task_t* MAIN_TASK;
+task_t main_task;
+task_t* MAIN_TASK = &main_task;
 task_t* CURRENT_TASK;
-task_t* DISPATCHER;
+task_t dispatcher;
+task_t* DISPATCHER = &dispatcher;
 task_t* QUEUE;
 bool DONE_CREATING_KERNEL_TASKS = false;
 struct sigaction action;
 struct itimerval timer;
-unsigned int total_tick_count = 0;
-
-#define STACKSIZE 64*1024 
+unsigned int total_tick_count;
 
 void ppos_init()
 {
@@ -34,14 +37,12 @@ void ppos_init()
     QUEUE = NULL;
 
     // Create Dispatcher
-    task_t dispatcher;
-    DISPATCHER = &dispatcher;
+    
     task_create(DISPATCHER, (void*)(*dispatcherBody), NULL);
     DISPATCHER->is_user_task = false;
 
     // Create main task
-    task_t main_task;
-    MAIN_TASK = &main_task;
+    
     task_create(MAIN_TASK, NULL, NULL); // apparently, it works with NULL
     MAIN_TASK->is_user_task = false;
     
@@ -119,8 +120,8 @@ int task_create(task_t *task, void (*start_routine)(void *),  void *arg)
     // Set attributes
     task->status = READY;
     task_setprio(task, 0);
-    task->when_it_started = total_tick_count;
-    task->processor_time = 0;
+    // task->when_it_started = total_tick_count;
+    // task->processor_time = 0;
     task->last_called = 0;
     // printf("%d\n", task->last_called);
 
@@ -135,12 +136,11 @@ int task_switch (task_t *task)
 
     // printf("%d\n", total_tick_count);
     if (old->last_called != 0)
-        // old->processor_time += 0;
         old->processor_time += total_tick_count - old->last_called;
 
 
-    // task->activations += 1;
-    // task->last_called = total_tick_count;
+    task->activations += 1;
+    task->last_called = total_tick_count;
     CURRENT_TASK = task;
 
 
@@ -154,7 +154,7 @@ void task_exit (int exit_code)
 
     CURRENT_TASK->execution_time = total_tick_count - CURRENT_TASK->when_it_started;
 
-    printf("Task %d exit: execution time %d ms, processor time %d ms, %d activations",
+    printf("Task %d exit: execution time %d ms, processor time %d ms, %d activations\n",
             CURRENT_TASK->id, CURRENT_TASK->execution_time, CURRENT_TASK->processor_time,
             CURRENT_TASK->activations);
     
@@ -246,6 +246,9 @@ void dispatcherBody(void* arg)
             task_switch (next_task);
          
             // Deal with task status?
+            if (next_task->status == DONE)
+                free(next_task->context.uc_stack.ss_sp);
+
         }
     }
     task_exit(0);

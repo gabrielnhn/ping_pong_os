@@ -11,18 +11,15 @@
 #include "queue.h"		// biblioteca de filas genéricas
 #include <stdbool.h>
 
-#define AGING 1 // task aging for dynamic priority
-#define QUANTUM 1000 // a milisec.
-#define MAX_TICKS 20
-
 // Estrutura que define um Task Control Block (TCB)
 typedef struct task_t
 {
   struct task_t *prev, *next ;		// ponteiros para usar em filas
+  int id ;				// identificador da tarefa
   ucontext_t context ;			// contexto armazenado da tarefa
+  
   bool is_user_task;
   int status; // READY, DONE, ...
-  int id ;				// identificador da tarefa
   int static_priority;
   int dynamic_priority;
   int clock_counter;
