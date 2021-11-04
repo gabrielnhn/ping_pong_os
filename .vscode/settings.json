@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "*.nxc": "c",
+        "ppos.h": "c"
+    }
+}
