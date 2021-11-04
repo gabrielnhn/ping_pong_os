@@ -5,3 +5,6 @@
 
 ### Compilando: gcc -Wall ppos_core.c queue.c pingpong-scheduler.c
 
+### Task 0: Dispatcher
+### Task 1: Main
+### O resto é de usuário.

@@ -39,19 +39,17 @@ void ppos_init()
     // Create Dispatcher
     
     task_create(DISPATCHER, (void*)(*dispatcherBody), NULL);
-    DISPATCHER->is_user_task = false;
-
-    // Create main task
-    
-    task_create(MAIN_TASK, NULL, NULL); // apparently, it works with NULL
-    MAIN_TASK->is_user_task = false;
-    
-    // Define main task as the current one
-    CURRENT_TASK = MAIN_TASK;
+    DISPATCHER->is_user_task = false; // sanity check
 
     DONE_CREATING_KERNEL_TASKS = true;
     active_user_tasks = 0;
 
+    // Create main task
+    task_create(MAIN_TASK, NULL, NULL); // apparently, it works with NULL
+    MAIN_TASK->is_user_task = true; // sanity check again
+    
+    // Define main task as the current one
+    CURRENT_TASK = MAIN_TASK;
 
     // Init alarm signal handler
     action.sa_handler = alarm_handler;
@@ -272,7 +270,7 @@ int task_getprio (task_t *task)
 void alarm_handler(int signum)
 {
     total_tick_count += 1;
-    if (CURRENT_TASK->is_user_task && (CURRENT_TASK != MAIN_TASK))
+    if (CURRENT_TASK->is_user_task)
     {
         CURRENT_TASK->clock_counter -= 1;
  
