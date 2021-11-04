@@ -24,6 +24,8 @@ typedef struct task_t
   int dynamic_priority;
   int clock_counter;
 
+  queue_t dependents;
+
   // Statistics:
   unsigned int when_it_started;
   unsigned int last_called;
@@ -36,6 +38,7 @@ typedef struct task_t
 // Possible Task Status values:
 #define READY 0
 #define DONE 1
+#define SUSPENDED 2
 
 // estrutura que define um semáforo
 typedef struct

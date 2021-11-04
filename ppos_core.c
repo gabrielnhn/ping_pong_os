@@ -197,13 +197,15 @@ task_t* scheduler(queue_t** q)
     {
         task_t* task = (task_t*) node;
 
-        if (task->dynamic_priority < max_priority) // reverse scale
+        if (task->status == READY)
         {
-            max_priority = task->dynamic_priority;
-            task_max_priority = task; 
+            if (task->dynamic_priority < max_priority) // reverse scale
+            {
+                max_priority = task->dynamic_priority;
+                task_max_priority = task; 
+            }
+            node = node->next;
         }
-        node = node->next;
-
     } while (node != first);
 
     // task_max_priority is the chosen one.
@@ -215,10 +217,13 @@ task_t* scheduler(queue_t** q)
     {
         task_t* task = (task_t*) node;
 
-        if (task != task_max_priority)
+        if (task->status == READY)
         {
-            if (task->dynamic_priority - AGING >= -20) // cant go out of range
-                task->dynamic_priority -= AGING; 
+            if (task != task_max_priority)
+            {
+                if (task->dynamic_priority - AGING >= -20) // cant go out of range
+                    task->dynamic_priority -= AGING; 
+            }
         }
         node = node->next;
     } while (node != first);
