@@ -84,5 +84,7 @@ void dispatcherBody(void* arg);
 
 void alarm_handler(int signum);
 
+void print_ready_queue();
+
 #endif
 

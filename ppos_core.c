@@ -8,7 +8,7 @@
 #include <sys/time.h>
 #include <iso646.h>
 
-#define STACKSIZE 64*1024 
+#define STACKSIZE 64*1024  * 20
 #define AGING 1
 // task aging for dynamic priority
 #define QUANTUM 1000 
@@ -30,6 +30,8 @@ struct sigaction action;
 struct itimerval timer;
 unsigned int total_tick_count;
 unsigned int last_time_checked_wake_up = -1;
+unsigned int last_time_checked_scheduler = -1;
+
 
 void ppos_init()
 {
@@ -223,18 +225,15 @@ void task_yield()
     task_switch(DISPATCHER);
 }
 
-task_t* scheduler(queue_t** q)
+task_t* scheduler()
 {
-    if (queue_size(*q) == 0)
+    if (queue_size((queue_t*) READY_QUEUE) == 0)
     {
-        // No tasks left
-        // fprintf(stderr, "[]\n");
         return NULL;
     }
 
-    fprintf(stderr, "[");
     // Find the task whose priority is the smallest
-    queue_t* first = *q;
+    queue_t* first = (queue_t*) READY_QUEUE;
 
     queue_t* node = first;
 
@@ -245,21 +244,15 @@ task_t* scheduler(queue_t** q)
     {
         task_t* task = (task_t*) node;
 
-        if (task->status == READY)
+        // fprintf(stderr, " %d ", task->id);
+        if (task->dynamic_priority < max_priority) // reverse scale
         {
-            fprintf(stderr, " %d ", task->id);
-            if (task->dynamic_priority < max_priority) // reverse scale
-            {
-                max_priority = task->dynamic_priority;
-                task_max_priority = task; 
-            }
+            max_priority = task->dynamic_priority;
+            task_max_priority = task; 
         }
-        else
-            perror("BRUH WHY IS THIS TASK IN HERE?\n");
         node = node->next;
     } while (node != first);
 
-    fprintf(stderr, "]");
     // task_max_priority is the chosen one.
 
     // Let us age the other tasks.
@@ -269,16 +262,11 @@ task_t* scheduler(queue_t** q)
     {
         task_t* task = (task_t*) node;
 
-        if (task->status == READY)
+        if (task != task_max_priority)
         {
-            if (task != task_max_priority)
-            {
-                if (task->dynamic_priority - AGING >= -20) // cant go out of range
-                    task->dynamic_priority -= AGING; 
-            }
+            if (task->dynamic_priority - AGING >= -20) // cant go out of range
+                task->dynamic_priority -= AGING; 
         }
-        // else
-        //     perror("BRUH WHY IS THIS TASK IN HERE?\n");
 
         node = node->next;
     } while (node != first);
@@ -286,7 +274,7 @@ task_t* scheduler(queue_t** q)
     // Reset chosen one's dynamic priority
     task_max_priority->dynamic_priority = task_getprio(task_max_priority);
 
-    fprintf(stderr, " - %d;\n", task_max_priority->id);
+    // fprintf(stderr, " - %d;\n", task_max_priority->id);
     return task_max_priority;
 }
 
@@ -304,49 +292,54 @@ void task_sleep(int t)
 
 void wake_up_tasks()
 {
-    if (last_time_checked_wake_up == systime())
-        return;
-    last_time_checked_wake_up = systime();
+    // if (last_time_checked_wake_up == systime())
+    //     return;
+    // last_time_checked_wake_up = systime();
 
-    bool woke_up = false;
+    // bool woke_up = false;
     if (queue_size((queue_t*) SLEEPING_QUEUE) == 0)
         return;
 
     queue_t* first = (queue_t*) SLEEPING_QUEUE;
     queue_t* node = first;
+    int initial_size = queue_size((queue_t*) SLEEPING_QUEUE);
+    int counter = 0;
 
     do 
     {
         task_t* task = (task_t*) node;
         node = node->next;
         if (task->wake_up_time <= systime())
-        {   
-            woke_up = true;
-            printf("task %d will wake up, %d <= %d\n", task->id, task->wake_up_time, systime());
+        {
+            // printf("task %d will wake up, %d <= %d\n", task->id, task->wake_up_time, systime());
             task->status = READY;
 
             queue_remove((queue_t**)&SLEEPING_QUEUE, (queue_t *)task);
             queue_append((queue_t**)&READY_QUEUE, (queue_t *)task);
         }
-        // else
-        //     printf("task %d will not wake up, %d > %d\n", task->id, task->wake_up_time, systime());
+        counter++;
+    } while (queue_size((queue_t*) SLEEPING_QUEUE) > 0 and (counter < initial_size));
 
-    } while ((queue_size((queue_t*) SLEEPING_QUEUE) > 0) and (node != first));
+}
 
-    if (woke_up)
+void print_ready_queue()
+{
+    if (queue_size((queue_t*) READY_QUEUE) == 0)
     {
-        queue_t* first = (queue_t*) READY_QUEUE;
-        queue_t* node = first;  
-        fprintf(stderr, "[");
-        do
-        {
-            task_t* task = (task_t*) node;
-            printf(" %d ", task->id);
-            node = node->next;
-        } while (node != first);
-        fprintf(stderr, "]\n");
-        
+        fprintf(stderr, "[]"); 
+        return;
     }
+
+    queue_t* first = (queue_t*) READY_QUEUE;
+    queue_t* node = first;  
+    fprintf(stderr, "[");
+    do
+    {
+        task_t* task = (task_t*) node;
+        printf(" %d ", task->id);
+        node = node->next;
+    } while (node != first);
+    fprintf(stderr, "]\n");
 }
 
 void dispatcherBody(void* arg)
@@ -371,6 +364,15 @@ void dispatcherBody(void* arg)
                 free(next_task->context.uc_stack.ss_sp);
 
         }
+        // else
+        // {
+        //     if (last_time_checked_wake_up != systime())
+        //     {
+        //         last_time_checked_wake_up = systime();
+        //         printf("asleep ");
+        //         print_ready_queue();
+        //     }
+        // }
     }
     task_exit(0);
 }
@@ -401,6 +403,13 @@ void alarm_handler(int signum)
         if (CURRENT_TASK->clock_counter <= 0)
             task_yield();
     }
+    // else
+    // {
+
+    //     fprintf(stderr, "tick %d ", systime());
+    //     print_ready_queue();
+
+    // }
 }
 
 unsigned int systime()
