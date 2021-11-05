@@ -16,6 +16,7 @@ typedef struct task_t
 {
   struct task_t *prev, *next ;		// ponteiros para usar em filas
   int id ;				// identificador da tarefa
+
   ucontext_t context ;			// contexto armazenado da tarefa
   
   bool is_user_task;
@@ -23,6 +24,8 @@ typedef struct task_t
   int static_priority;
   int dynamic_priority;
   int clock_counter;
+
+  unsigned int wake_up_time;
 
   queue_t* dependents;
   int exit_code;
@@ -71,7 +74,7 @@ typedef struct
 // extern int total_task_count;
 // extern int active_user_tasks;
 // extern task_t* DISPATCHER;
-// extern task_t* QUEUE;
+// extern task_t* READY_QUEUE;
 // extern bool DONE_CREATING_KERNEL_TASKS;
 // extern struct sigaction action;
 // extern struct itimerval timer;
