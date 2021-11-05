@@ -68,18 +68,6 @@ typedef struct
   // preencher quando necessário
 } mqueue_t ;
 
-// Global vars
-// extern task_t* CURRENT_TASK;
-// extern task_t* MAIN_TASK;
-// extern int total_task_count;
-// extern int active_user_tasks;
-// extern task_t* DISPATCHER;
-// extern task_t* READY_QUEUE;
-// extern bool DONE_CREATING_KERNEL_TASKS;
-// extern struct sigaction action;
-// extern struct itimerval timer;
-
-
 void dispatcherBody(void* arg);
 
 void alarm_handler(int signum);
