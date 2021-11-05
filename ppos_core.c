@@ -8,7 +8,7 @@
 #include <sys/time.h>
 #include <iso646.h>
 
-#define STACKSIZE 64*1024  * 20
+#define STACKSIZE 64*1024
 #define AGING 1
 // task aging for dynamic priority
 #define QUANTUM 1000 
@@ -29,8 +29,6 @@ bool DONE_CREATING_KERNEL_TASKS = false;
 struct sigaction action;
 struct itimerval timer;
 unsigned int total_tick_count;
-unsigned int last_time_checked_wake_up = -1;
-unsigned int last_time_checked_scheduler = -1;
 
 
 void ppos_init()
@@ -126,14 +124,12 @@ int task_create(task_t *task, void (*start_routine)(void *),  void *arg)
     // task->when_it_started = total_tick_count;
     // task->processor_time = 0;
     task->last_called = 0;
-    // printf("%d\n", task->last_called);
 
     return task->id;
 } 
 
 int task_switch (task_t *task)
 {
-    // printf("%d, %d", sizeof(task_t), sizeof(*task));
 
     task_t* old = CURRENT_TASK;
 
@@ -205,7 +201,6 @@ void task_exit (int exit_code)
 
         } while (queue_size(CURRENT_TASK->dependents) > 0);
         
-
     }
 
     // only go back to MAIN_TASK if it DISPATCHER is the one exiting.
@@ -244,7 +239,6 @@ task_t* scheduler()
     {
         task_t* task = (task_t*) node;
 
-        // fprintf(stderr, " %d ", task->id);
         if (task->dynamic_priority < max_priority) // reverse scale
         {
             max_priority = task->dynamic_priority;
@@ -274,14 +268,12 @@ task_t* scheduler()
     // Reset chosen one's dynamic priority
     task_max_priority->dynamic_priority = task_getprio(task_max_priority);
 
-    // fprintf(stderr, " - %d;\n", task_max_priority->id);
     return task_max_priority;
 }
 
 void task_sleep(int t)
 {
     CURRENT_TASK->wake_up_time = systime() + t;
-    // printf("task %d will sleep until %d\n", CURRENT_TASK->id, CURRENT_TASK->wake_up_time);
     CURRENT_TASK->status = SUSPENDED;
 
     queue_remove((queue_t**)&READY_QUEUE, (queue_t *)CURRENT_TASK);
@@ -292,12 +284,8 @@ void task_sleep(int t)
 
 void wake_up_tasks()
 {
-    // if (last_time_checked_wake_up == systime())
-    //     return;
-    // last_time_checked_wake_up = systime();
-
-    // bool woke_up = false;
     if (queue_size((queue_t*) SLEEPING_QUEUE) == 0)
+        // no tasks to awake
         return;
 
     queue_t* first = (queue_t*) SLEEPING_QUEUE;
@@ -311,18 +299,18 @@ void wake_up_tasks()
         node = node->next;
         if (task->wake_up_time <= systime())
         {
-            // printf("task %d will wake up, %d <= %d\n", task->id, task->wake_up_time, systime());
             task->status = READY;
 
             queue_remove((queue_t**)&SLEEPING_QUEUE, (queue_t *)task);
             queue_append((queue_t**)&READY_QUEUE, (queue_t *)task);
         }
         counter++;
-    } while (queue_size((queue_t*) SLEEPING_QUEUE) > 0 and (counter < initial_size));
+    } while ((queue_size((queue_t*) SLEEPING_QUEUE) > 0) and (counter < initial_size));
 
 }
 
 void print_ready_queue()
+// used for debugging purposes.
 {
     if (queue_size((queue_t*) READY_QUEUE) == 0)
     {
@@ -364,15 +352,6 @@ void dispatcherBody(void* arg)
                 free(next_task->context.uc_stack.ss_sp);
 
         }
-        // else
-        // {
-        //     if (last_time_checked_wake_up != systime())
-        //     {
-        //         last_time_checked_wake_up = systime();
-        //         printf("asleep ");
-        //         print_ready_queue();
-        //     }
-        // }
     }
     task_exit(0);
 }
@@ -394,7 +373,6 @@ int task_getprio (task_t *task)
 
 void alarm_handler(int signum)
 {
-    // printf("%d\n", systime());
     total_tick_count += 1;
     if (CURRENT_TASK->is_user_task)
     {
@@ -403,13 +381,6 @@ void alarm_handler(int signum)
         if (CURRENT_TASK->clock_counter <= 0)
             task_yield();
     }
-    // else
-    // {
-
-    //     fprintf(stderr, "tick %d ", systime());
-    //     print_ready_queue();
-
-    // }
 }
 
 unsigned int systime()
