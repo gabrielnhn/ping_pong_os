@@ -74,7 +74,6 @@ int sem_destroy (semaphore_t *s)
     {
         queue_t* first = (queue_t*) s->queue;
         queue_t* node = first;
-        int initial_size = queue_size((queue_t*) s->queue);
         int counter = 0;
 
         do 
