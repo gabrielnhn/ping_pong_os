@@ -10,6 +10,7 @@
 #include <ucontext.h>		// biblioteca POSIX de trocas de contexto
 #include "queue.h"		// biblioteca de filas genéricas
 #include <stdbool.h>
+#include <iso646.h>
 
 // Estrutura que define um Task Control Block (TCB)
 typedef struct task_t
@@ -47,6 +48,9 @@ typedef struct task_t
 // estrutura que define um semáforo
 typedef struct
 {
+  int counter;
+  task_t* queue;
+  bool lock;
   // preencher quando necessário
 } semaphore_t ;
 
@@ -76,3 +80,7 @@ void print_ready_queue();
 
 #endif
 
+// Global vars. to be used in `pio.c`
+
+extern task_t* CURRENT_TASK;
+extern task_t* READY_QUEUE;
