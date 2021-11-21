@@ -79,7 +79,10 @@ typedef struct item_s
 // estrutura que define uma fila de mensagens
 typedef struct
 {
-    semaphore_t s;
+    semaphore_t slots;
+    semaphore_t items;
+    semaphore_t access;
+
     item_t* queue;
     int item_size;
     bool destroyed;

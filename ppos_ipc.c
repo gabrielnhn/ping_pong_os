@@ -102,7 +102,11 @@ int mqueue_create (mqueue_t *queue, int max_msgs, int msg_size)
     if (queue == NULL)
         return -1;
 
-    sem_create(&(queue->s), max_msgs);
+    sem_create(&(queue->access), 1);
+    sem_create(&(queue->items), 0);
+    sem_create(&(queue->slots), max_msgs);
+
+
     queue->queue = NULL;
     queue->item_size = msg_size;
     queue->destroyed = false;
@@ -111,7 +115,7 @@ int mqueue_create (mqueue_t *queue, int max_msgs, int msg_size)
 
 int mqueue_send (mqueue_t *queue, void *msg)
 {
-    sem_down(&(queue->s));
+    sem_down(&(queue->slots));
 
     // sanity checks
     if (queue == NULL)
@@ -130,13 +134,20 @@ int mqueue_send (mqueue_t *queue, void *msg)
     item->prev = NULL;
 
     memcpy(&(item->value), msg, queue->item_size);
+
+    sem_down(&(queue->access));
     queue_append((queue_t**) &(queue->queue), (queue_t*) item);
+    sem_up(&(queue->access));
+
+    sem_up(&(queue->items));
+
     return 0;
 }
 
 int mqueue_recv (mqueue_t *queue, void *msg)
 {
-    sem_up(&(queue->s));
+    sem_down(&(queue->items));
+
     item_t* first = queue->queue;
 
     // sanity checks
@@ -149,9 +160,14 @@ int mqueue_recv (mqueue_t *queue, void *msg)
     if (queue->destroyed == true)
         return -1;
 
+    sem_down(&(queue->access));
     queue_remove((queue_t**) &(queue->queue), (queue_t*) first);
+    sem_up(&(queue->access));
+
     memcpy(msg, &(first->value), queue->item_size);
     
+    sem_up(&(queue->slots));
+
     free(first);
 
     return 0;
@@ -163,7 +179,10 @@ int mqueue_destroy (mqueue_t *queue)
         return -1;
 
     queue->destroyed = true;
-    sem_destroy(&(queue->s));
+    sem_destroy(&(queue->slots));
+    sem_destroy(&(queue->items));
+    sem_destroy(&(queue->access));
+
 
     // Destroy every message
 
