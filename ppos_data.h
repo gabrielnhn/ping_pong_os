@@ -11,6 +11,8 @@
 #include "queue.h"		// biblioteca de filas genéricas
 #include <stdbool.h>
 #include <iso646.h>
+#include <stdatomic.h>
+
 
 // Estrutura que define um Task Control Block (TCB)
 typedef struct task_t
@@ -50,7 +52,7 @@ typedef struct
 {
   int counter;
   task_t* queue;
-  bool lock;
+  atomic_flag lock;
   // preencher quando necessário
 } semaphore_t ;
 
@@ -77,6 +79,8 @@ void dispatcherBody(void* arg);
 void alarm_handler(int signum);
 
 void print_ready_queue();
+
+void task_yield();
 
 #endif
 
