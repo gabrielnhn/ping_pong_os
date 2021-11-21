@@ -75,7 +75,7 @@ typedef struct
 // estrutura que define uma fila de mensagens
 typedef struct
 {
-  // preencher quando necessário
+  semaphore_t s;
 } mqueue_t ;
 
 void dispatcherBody(void* arg);
