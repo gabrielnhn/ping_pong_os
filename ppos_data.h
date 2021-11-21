@@ -47,12 +47,16 @@ typedef struct task_t
 #define DONE 1
 #define SUSPENDED 2
 
+
+#define SEM_VALID 69
+#define SEM_INVALID 0
 // estrutura que define um semáforo
 typedef struct
 {
   int counter;
   task_t* queue;
   atomic_flag lock;
+  int valid;
   // preencher quando necessário
 } semaphore_t ;
 

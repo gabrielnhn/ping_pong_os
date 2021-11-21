@@ -6,7 +6,7 @@
 int sem_create (semaphore_t *s, int value)
 {
     atomic_flag_clear(&(s->lock));
-
+    s->valid = SEM_VALID;
     s->counter = value;
     s->queue = NULL;
     return 0;
@@ -14,7 +14,7 @@ int sem_create (semaphore_t *s, int value)
 
 int sem_down (semaphore_t *s)
 {
-    if (s == NULL)
+    if ((s == NULL) or (s->valid != SEM_VALID))
         return -1;
 
     // printf("BRUH\n");
@@ -40,7 +40,7 @@ int sem_down (semaphore_t *s)
 
 int sem_up(semaphore_t* s)
 {
-    if (s == NULL)
+    if ((s == NULL) or (s->valid != SEM_VALID))
         return -1;
     
     while (atomic_flag_test_and_set(&(s->lock)) != false);
@@ -63,31 +63,36 @@ int sem_up(semaphore_t* s)
 
 int sem_destroy (semaphore_t *s)
 {
-    if (s == NULL)
+    if ((s == NULL) or (s->valid != SEM_VALID))
         return -1;
 
     while (atomic_flag_test_and_set(&(s->lock)) != false);
 
     // Wake up every single task
-    queue_t* first = (queue_t*) s->queue;
-    queue_t* node = first;
-    int initial_size = queue_size((queue_t*) s->queue);
-    int counter = 0;
 
-    do 
+    if (queue_size((queue_t*) s->queue) > 0)
     {
-        task_t* task = (task_t*) node;
-        node = node->next;
-        task->status = READY;
+        queue_t* first = (queue_t*) s->queue;
+        queue_t* node = first;
+        int initial_size = queue_size((queue_t*) s->queue);
+        int counter = 0;
 
-        queue_remove((queue_t**)&s->queue, (queue_t *)task);
-        queue_append((queue_t**)&READY_QUEUE, (queue_t *)task);
+        do 
+        {
+            task_t* task = (task_t*) node;
+            node = node->next;
+            task->status = READY;
+
+            queue_remove((queue_t**)&s->queue, (queue_t *)task);
+            queue_append((queue_t**)&READY_QUEUE, (queue_t *)task);
+            
+            counter++;
+        } while (s->queue != NULL);
         
-        counter++;
-    } while ((queue_size((queue_t*) s->queue) > 0) and (counter < initial_size));
-
+        // } while ((queue_size((queue_t*) s->queue) > 0) and (counter < initial_size));
+    }
     // Destroy
-    s = NULL;
     atomic_flag_clear(&(s->lock));
+    s->valid = SEM_INVALID;
     return 0;
 }
