@@ -3,7 +3,7 @@
 ### por Gabriel Nascarella Hishida do Nascimento
 ### GRR20190361
 
-### Compilando: gcc -Wall ppos_core.c queue.c pingpong-sleep.c
+### Compilando: gcc pingpong-mqueue.c ppos_core.c ppos_ipc.c queue.c -Wall -lm
 
 ### Task 0: Dispatcher
 ### Task 1: Main

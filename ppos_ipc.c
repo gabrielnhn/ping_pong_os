@@ -18,12 +18,9 @@ int sem_down (semaphore_t *s)
     if ((s == NULL) or (s->valid != SEM_VALID))
         return -1;
 
-    // printf("BRUH\n");
-
     while (atomic_flag_test_and_set(&(s->lock)) != false);
     
     s->counter -= 1;
-    // printf("%d\n", s->counter);
 
     if (s->counter < 0)
     {
@@ -185,7 +182,6 @@ int mqueue_destroy (mqueue_t *queue)
 
 
     // Destroy every message
-
     if (queue_size((queue_t*) queue->queue) > 0)
     {
         queue_t* first = (queue_t*) queue->queue;
@@ -202,7 +198,6 @@ int mqueue_destroy (mqueue_t *queue)
             
             counter++;
         } while (queue->queue != NULL);
-        
 
     }
     return 0;
