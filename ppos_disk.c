@@ -21,6 +21,7 @@ void diskDriverBody (void * args)
     request_t* current_req;
     while (true) 
     {
+        // printf("I'm running.\n");
         // obtém o semáforo de acesso ao disco
         sem_down(&(disk.disk_access));
 
@@ -30,7 +31,7 @@ void diskDriverBody (void * args)
             // acorda a tarefa cujo pedido foi atendido
             queue_remove((queue_t**) &(DISK->task_q), (queue_t*) current_req->task);
             current_req->task->status = READY;
-            queue_remove((queue_t**) &READY_QUEUE, (queue_t*) current_req->task);
+            queue_append((queue_t**) &READY_QUEUE, (queue_t*) current_req->task);
 
             // remove request from queue
             queue_remove((queue_t**)&(DISK->request_q), (queue_t*) current_req);
@@ -143,9 +144,18 @@ int disk_mgr_init (int *numBlocks, int *blockSize)
     DISK->task_q = NULL;
     DISK->active = false;
 
+    *numBlocks = disk_cmd(DISK_CMD_DISKSIZE, 0, NULL);
+    if (*numBlocks < 0)
+        return -1;
+
+    *blockSize = disk_cmd(DISK_CMD_BLOCKSIZE, 0, NULL);
+    if (*blockSize < 0)
+        return -1;
+
     DONE_CREATING_KERNEL_TASKS = false; 
     task_create(DISK_DRIVER, diskDriverBody, NULL);
     DONE_CREATING_KERNEL_TASKS = true;
+    DISK_DRIVER->status = SUSPENDED;
 
     sem_up(&(DISK->disk_access));
     return 0;
