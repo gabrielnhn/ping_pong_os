@@ -102,22 +102,24 @@ int disk_block_request (int block, void *buffer, int command)
     sem_up(&(DISK->disk_access));
 
     task_yield();
+
+    return 0;
 }
 
 int disk_block_read (int block, void *buffer)
 {
-    disk_block_request(block, buffer, READ);
+    return disk_block_request(block, buffer, READ);
 }
 
 int disk_block_write (int block, void *buffer)
 {
-    disk_block_request(block, buffer, WRITE);
+    return disk_block_request(block, buffer, WRITE);
 }
 
 
 int disk_mgr_init (int *numBlocks, int *blockSize)
 {
-    if (disk_cmd(DISK_CMD_INIT, 0, NULL) < 0);
+    if (disk_cmd(DISK_CMD_INIT, 0, NULL) < 0)
         return -1;
 
     // handle SIGUSR1 signals.
