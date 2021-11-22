@@ -9,10 +9,10 @@
 #include <iso646.h>
 
 #define STACKSIZE 64*1024
-#define AGING 1
 // task aging for dynamic priority
-#define QUANTUM 1000 
+#define AGING 1
 // a milisec.
+#define QUANTUM 1000 
 #define MAX_TICKS 20
 
 // Global vars
