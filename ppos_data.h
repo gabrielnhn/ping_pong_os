@@ -88,17 +88,23 @@ typedef struct
     bool destroyed;
 } mqueue_t;
 
+
+// Headers used in other files
+
 void dispatcherBody(void *arg);
 
 void alarm_handler(int signum);
 
 void print_ready_queue();
 
+int task_create(task_t *task, void (*start_routine)(void *),  void *arg);
+
 void task_yield();
 
 #endif
 
-// Global vars. to be used in `pio.c`
+// Global vars. to be used in other files
 
 extern task_t *CURRENT_TASK;
 extern task_t *READY_QUEUE;
+extern bool DONE_CREATING_KERNEL_TASKS;

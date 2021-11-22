@@ -203,7 +203,7 @@ void task_exit (int exit_code)
         
     }
 
-    // only go back to MAIN_TASK if it DISPATCHER is the one exiting.
+    // only go back to MAIN_TASK if DISPATCHER is the one exiting.
     if (CURRENT_TASK != DISPATCHER)
         task_yield();
     else
