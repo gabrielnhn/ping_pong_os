@@ -1,9 +1,11 @@
+#include <signal.h>
+#include <stdlib.h>
+#include <stdio.h>
 #include "disk.h"
 #include "queue.h"
 #include "ppos_data.h"
 #include "ppos.h"
 #include "ppos_disk.h"
-#include <signal.h>
 
 
 task_t disk_driver;

@@ -7,7 +7,7 @@
 #ifndef __DISK_MGR__
 #define __DISK_MGR__
 
-#include <ppos_data.h>
+#include "ppos_data.h"
 #include "disk.h"
 // estruturas de dados e rotinas de inicializacao e acesso
 // a um dispositivo de entrada/saida orientado a blocos,
@@ -50,6 +50,6 @@ int disk_block_read (int block, void *buffer) ;
 // escrita de um bloco, do buffer para o disco
 int disk_block_write (int block, void *buffer) ;
 
-void sigusr_handler(int signum)ç
+void sigusr_handler(int signum);
 
 #endif
