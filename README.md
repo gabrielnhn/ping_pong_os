@@ -1,4 +1,4 @@
-## P9, o PingPongOS com `task_sleep()` 
+## P13, o PingPongOS com driver de disco. 
 
 ### por Gabriel Nascarella Hishida do Nascimento
 ### GRR20190361
@@ -7,4 +7,4 @@
 
 ### Task 0: Dispatcher
 ### Task 1: Main
-### O resto é de usuário.
+### O resto é de usuário ou o Driver de disco.
